@@ -3,6 +3,8 @@ library(tidylog)
 library(rCAEDDATA)
 library(ipeds)
 
+
+
 ## only goes to 1516 - need 1617 and 1718 by school, eth, gender grads, uc grads
 
 load("~/Data/USF-talk-February-2020/data/graduates.rda")
@@ -18,8 +20,11 @@ graduates %>%
 
 # gradall1617.txt has same structure as gradutes
 # graduates1718.xlsx is different, needs work to get to same structure
-
-
+library(readr)
+gradall_1617 <- read_delim("data/gradall_1617.txt",
+													 "\t", escape_double = FALSE, trim_ws = TRUE)
+View(gradall_1617)
+glimpse(gradall_1617)
 
 
 
