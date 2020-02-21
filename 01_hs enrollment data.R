@@ -2,7 +2,8 @@ library(tidyverse)
 library(tidylog)
 library(rCAEDDATA)
 library(ipeds)
-library()
+
+## only goes to 1516 - need 1617 and 1718 by school, eth, gender grads, uc grads
 
 load("~/Data/USF-talk-February-2020/data/graduates.rda")
 glimpse(graduates)
@@ -14,7 +15,22 @@ graduates %>%
 	count(YEAR) %>%
 	view()
 
-## only goes to 1516 - need 1617 and 1718 by school, eth, gender grads, uc grads
+
+# gradall1617.txt has same structure as gradutes
+# graduates1718.xlsx is different, needs work to get to same structure
+
+
+
+
+
+
+
+
+
+
+
+
+
 graduates %>%
 	group_by(YEAR) %>%
 	summarise(total_grads = sum(GRADS),
