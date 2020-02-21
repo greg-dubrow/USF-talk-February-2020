@@ -7,3 +7,5 @@ Slides for invited talk at USF for campus forum. PEr emails with Angie Davis & t
 —What role do endowments play in ensuring long-term financial security?
 
 Use data from CA Dept Ed, IPEDS & other sources
+
+slides in ppt
