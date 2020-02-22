@@ -1,7 +1,6 @@
 library(tidyverse)
 library(tidylog)
 library(rCAEDDATA)
-library(ipeds)
 library(rsfsu)
 library(readr)
 library(janitor)
