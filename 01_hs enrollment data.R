@@ -64,8 +64,8 @@ cahsgrad18 <- read.delim("C:/Data/research projects/USF-talk-February-2020/data/
 	filter(aggregate_level == "S") %>%
 	filter(dass == "All") %>%
 	filter(charter_school == "All") %>%
-	filter(school_name != "Nonpublic, Nonsectarian Schools") %>%
-	filter(school_name != "District Office") %>%
+	# filter(school_name != "Nonpublic, Nonsectarian Schools") %>%
+	# filter(school_name != "District Office") %>%
 	mutate(YEAR = "1718") %>%
 	mutate(YEAR = factor(YEAR)) %>%
 	mutate_at(vars(ends_with("_code")), as.character) %>%
@@ -83,8 +83,12 @@ cahsgrad18 <- read.delim("C:/Data/research projects/USF-talk-February-2020/data/
 
 glimpse(cahsgrad18)
 
+cahsgrad93to18_tot <- rbind(cahsgrad93to17_tot, cahsgrad18) %>%
+	arrange(YEAR, total_grads, Yes, No) %>%
+	mutate(total_grads = ifelse(YEAR == "1718", 418205, total_grads)) %>%
+	mutate(pctucgrads = Yes / total_grads)
 
-
+glimpse(cahsgrad93to18_tot)
 
 
 
