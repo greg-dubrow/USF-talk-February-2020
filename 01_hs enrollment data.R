@@ -12,12 +12,10 @@ library(janitor)
 
 cahsgrad93to16 <- readRDS(file = "Data/cahsgrad93to16.rds") %>%
 	arrange(CDS_CODE, YEAR, ETHNIC, GENDER) %>%
-	mutate(ETHNIC = as.character(ETHNIC))
+	mutate(ETHNIC = as.character(ETHNIC)) %>%
+	arrange(CDS_CODE, YEAR, ETHNIC, GENDER)
 
 glimpse(cahsgrad93to16)
-
-cahsgrad93to16 <- cahsgrad93to16 %>%
-	arrange(CDS_CODE, YEAR, ETHNIC, GENDER)
 
 cahsgrad93to16  %>%
 	count(YEAR) %>%
@@ -31,7 +29,8 @@ cahsgrad17 <- read_delim("data/gradall_1617.txt",
 	mutate(YEAR = factor(YEAR)) %>%
 	mutate(ETHNIC = as.character(ETHNIC)) %>%
 	mutate(GRADS = as.integer(GRADS)) %>%
-	mutate(UC_GRADS = as.integer(UC_GRADS))
+	mutate(UC_GRADS = as.integer(UC_GRADS)) %>%
+	arrange(CDS_CODE, YEAR, ETHNIC, GENDER)
 
 glimpse(cahsgrad17)
 
@@ -49,15 +48,18 @@ cahsgrad93to17 %>%
 cahsgrad93to17_tot <- cahsgrad93to17 %>%
 	group_by(YEAR) %>%
 	summarise(total_grads = sum(GRADS),
-						Yes = sum(UC_GRADS),
-						No = total_grads - Yes) %>%
+						uccsu = sum(UC_GRADS),
+						notuccsu = total_grads - uccsu) %>%
 	ungroup()
 glimpse(cahsgrad93to17_tot)
 
 # file structure https://www.cde.ca.gov/ds/sd/sd/fsacgr.asp
 # return a df with year, total grads and uc elig yes/no
+# work desktop
 cahsgrad18 <- read.delim("C:/Data/research projects/USF-talk-February-2020/data/cahsgrad18.txt",
-												 stringsAsFactors=FALSE) %>%
+												 stringsAsFactors=FALSE)
+#mac laptop
+cahsgrad18 <- read.delim("data/cahsgrad18.txt", stringsAsFactors=FALSE) %>%
 	clean_names() %>%
 	filter(reporting_category == "TA") %>%
 	filter(aggregate_level == "S") %>%
@@ -77,21 +79,71 @@ cahsgrad18 <- read.delim("C:/Data/research projects/USF-talk-February-2020/data/
 	select(CDS_CODE, GRADS, UC_GRADS, YEAR) %>%
 	group_by(YEAR) %>%
 	summarise(total_grads = sum(GRADS),
-							Yes = sum(UC_GRADS),
-							No = total_grads - Yes)
+						uccsu = sum(UC_GRADS),
+						notuccsu = total_grads - uccsu)
 
 glimpse(cahsgrad18)
 
 cahsgrad93to18_tot <- rbind(cahsgrad93to17_tot, cahsgrad18) %>%
-	arrange(YEAR, total_grads, Yes, No) %>%
+	arrange(YEAR, total_grads, uccsu, notuccsu) %>%
+	# amend 201718 from
+	# https://dq.cde.ca.gov/dataquest/dqcensus/CohRateLevels.aspx?cds=00&agglevel=state&year=2017-18&initrow=&ro=y
 	mutate(total_grads = ifelse(YEAR == "1718", 418205, total_grads)) %>%
-	mutate(pctucgrads = Yes / total_grads)
+	mutate(uccsu = ifelse(YEAR == "1718", 208769, uccsu)) %>%
+	mutate(notuccsu = ifelse(YEAR == "1718", total_grads - uccsu, notuccsu)) %>%
+	arrange(YEAR) %>%
+	mutate(year_ch = as.character(YEAR)) %>%
+	mutate(type = "Actual")
 
 glimpse(cahsgrad93to18_tot)
 
+# projected grads from dept finance - 2018-19 onward is projected delete 201718
+grproj_to2028 <- readxl::read_excel("data/capublic_k12_enrollproj_to2028.xlsx",
+																						 sheet = "hsgrads-tr") %>%
+	mutate(year_ch = str_sub(year, 3, 7)) %>%
+	mutate(year_ch = str_replace(year_ch, "-", "")) %>%
+	filter(year_ch != "1718") %>%
+	mutate(YEAR = factor(year_ch)) %>%
+	mutate(uccsu = as.integer(NA)) %>%
+	mutate(notuccsu = as.integer(NA)) %>%
+	mutate(notuccsu = as.integer(NA)) %>%
+	mutate(type = "Projected") %>%
+	select(YEAR, total_grads = total, uccsu, notuccsu, year_ch, type) %>%
+	# amend 2018-19 with actual results from
+	# https://dq.cde.ca.gov/dataquest/dqcensus/CohRateLevels.aspx?cds=00&agglevel=state&year=2018-19
+	mutate(total_grads = ifelse(YEAR == "1819", 417496, total_grads)) %>%
+	mutate(uccsu = ifelse(year_ch == "1819", 210980, uccsu)) %>%
+	mutate(notuccsu = ifelse(year_ch == "1819", total_grads - uccsu, notuccsu)) %>%
+	mutate(type = ifelse(year_ch == "1819", "Actual", type))
 
+glimpse(grproj_to2028)
 
+hsgrads_1993_2028 <- rbind(cahsgrad93to18_tot, grproj_to2028) %>%
+	mutate(pctucgrads = uccsu / total_grads) %>%
+	arrange(YEAR) %>%
+	# add projected uccsu grads based on constant 2017-18 to 2018-19 increase 0.0061437
+	mutate(pctucgrads = ifelse(year_ch >= "1920", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2021", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2122", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2223", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2324", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2425", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2526", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2627", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2728", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(pctucgrads = ifelse(year_ch == "2829", lag(pctucgrads) + 0.0061437, pctucgrads)) %>%
+	mutate(uccsu = ifelse(type == "Projected", round(pctucgrads * total_grads, 0), uccsu)) %>%
+	mutate(notuccsu = ifelse(type == "Projected", round(total_grads -uccsu, 0), notuccsu)) %>%
+	#mutate(uccsu = round(uccsu, 0)) %>%
+	mutate(gr_tot_change = (total_grads - lag(total_grads))) %>%
+	mutate(gr_tot_pct_change = (total_grads/lag(total_grads)- 1)) %>%
+	mutate(gr_uc_change = (uccsu - lag(uccsu))) %>%
+	mutate(gr_uc_pct_change = (uccsu/lag(uccsu) - 1)) %>%
+	mutate(gr_notuc_change = (notuccsu - lag(notuccsu))) %>%
+	mutate(gr_notuc_pct_change = (notuccsu/lag(notuccsu) - 1)) %>%
+	select(YEAR, total_grads, uccsu, notuccsu, type, pctucgrads, type, everything())
 
+glimpse(hsgrads_1993_2028)
 
 ## charts
 # total by uc/csu elig & not
