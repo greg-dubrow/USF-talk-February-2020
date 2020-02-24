@@ -138,6 +138,9 @@ cahsgrads_1993_2028 <- rbind(cahsgrad93to18_tot, grproj_to2028) %>%
 
 glimpse(cahsgrads_1993_2028)
 
+cahsgrads_1993_2028 <- cahsgrads_1993_2028 %>%
+	mutate(pctucgrads = ifelse(year_ch >= "9293", uccsu / total_grads, pctucgrads))
+
 cahsgrads_1993_2028 %>%
 	select(total_grads) %>%
 	summary()

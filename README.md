@@ -1,4 +1,4 @@
-Slides for invited talk at USF for campus forum. PEr emails with Angie Davis & talk with Don Heller, general topics:
+Slides for invited talk at USF for campus forum. Per emails with Angie Davis & talk with Don Heller, general topics:
 
 —From a 30,000 ft view, what are the major trends affecting the higher ed landscape in the US today, particularly traditional liberal arts colleges?
 

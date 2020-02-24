@@ -13,7 +13,10 @@ jesids <- c("164924", "181002", "186432", "122931", "169716", "159656", "127918"
 	"117946", "206622", "102234", "166124", "117946", "206622", "235316", "129242")
 
 # use 2018 instchar to filter out enr 1618 by level and sector
-instchar_18 <- as_tibble(readr::read_csv("~/Data/ipeds/instchar_2018.csv")) %>%
+# mac home
+# instchar_18 <- as_tibble(readr::read_csv("~/Data/ipeds/instchar_2018.csv")) %>%
+# pc work
+instchar_18 <- as_tibble(readr::read_csv("C:/Data/ipeds/instchar_2018.csv")) %>%
 	filter(ICLEVEL %in% c(1, 2)) %>%
 	filter(SECTOR > 0 & SECTOR <=6) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
@@ -27,7 +30,10 @@ instchar_18 %>%
 
 ## load fall enrolls
 # 2018
-fallenroll_2018 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2018.csv")) %>%
+# mac home
+#fallenroll_2018 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2018.csv")) %>%
+# pc work
+fallenroll_2018 <- as_tibble(readr::read_csv("C:/Data/ipeds/fallenroll_2018.csv")) %>%
 	filter(EFALEVEL == 2) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
 	mutate(year = "Fall 2018") %>%
@@ -38,7 +44,10 @@ glimpse(fallenroll_2018)
 fallenroll_2018 %>%
 	count(jescoll)
 
-fallenroll_2017 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2017.csv")) %>%
+# mac home
+#fallenroll_2017 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2017.csv")) %>%
+# pc work
+fallenroll_2017 <- as_tibble(readr::read_csv("C:/Data/ipeds/fallenroll_2017.csv")) %>%
 	filter(EFALEVEL == 2) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
 	mutate(year = "Fall 2017") %>%
@@ -46,7 +55,9 @@ fallenroll_2017 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2017.csv")
 
 glimpse(fallenroll_2017)
 
-fallenroll_2016 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2016.csv")) %>%
+#fallenroll_2016 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2016.csv")) %>%
+# pc work
+fallenroll_2016 <- as_tibble(readr::read_csv("C:/Data/ipeds/fallenroll_2016.csv")) %>%
 	filter(EFALEVEL == 2) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
 	mutate(year = "Fall 2016") %>%
@@ -66,7 +77,10 @@ glimpse(fallenroll1618)
 fallenroll1618 %>%
 	count(SECTOR)
 
-delta0015all <- (haven::read_sas("~/Data/ipeds/delta_public_release_00_15.sas7bdat", NULL))
+#mac home
+#delta0015all <- (haven::read_sas("~/Data/ipeds/delta_public_release_00_15.sas7bdat", NULL))
+# pc work
+delta0015all <- (haven::read_sas("C:/Data/ipeds/delta_public_release_00_15.sas7bdat", NULL))
 glimpse(delta0015all)
 
 delta0015all %>%
@@ -89,7 +103,10 @@ glimpse(delta0015)
 delta0015 %>%
 	count(year)
 
-delta8799all <- (haven::read_sas("~/Data/ipeds/delta_public_release_87_99.sas7bdat", NULL))
+#mac home
+#delta8799all <- (haven::read_sas("~/Data/ipeds/delta_public_release_87_99.sas7bdat", NULL))
+# pc work
+delta8799all <- (haven::read_sas("C:/Data/ipeds/delta_public_release_87_99.sas7bdat", NULL))
 glimpse(delta8799all)
 
 delta8799all %>%
@@ -157,7 +174,7 @@ instchar %>%
 
 ## left join enr with instchar
 
-fallenroll <- merge(fallenrolla, instchar) %>%
+ipeds_fallenroll_8718 <- merge(fallenrolla, instchar) %>%
 	select(UNITID, inst_name, inst_sec, lac, jescoll, year, total_enr_ug) %>%
 	mutate(inst_sec_desc = case_when(inst_sec == 1 ~ "Public 4-year or above",
 																	 inst_sec == 2 ~ "Private nonprofit 4-year or above",
@@ -172,7 +189,12 @@ fallenroll <- merge(fallenrolla, instchar) %>%
 	ungroup() %>%
 	select(UNITID, inst_name, inst_sec, inst_sec_desc, lac, jescoll,
 				 year, total_enr_ug, enr_change, enr_pct_change)
-glimpse(fallenroll)
+glimpse(ipeds_fallenroll_8718)
+
+ipeds_fallenroll_8718 %>%
+	count(year)
+
+saveRDS(ipeds_fallenroll_8718, file = "data/ipeds_fallenroll_8718.rds")
 
 fallenroll %>%
 	count(inst_sec)
