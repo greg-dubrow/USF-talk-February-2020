@@ -34,10 +34,17 @@ instchar_18 %>%
 #fallenroll_2018 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2018.csv")) %>%
 # pc work
 fallenroll_2018 <- as_tibble(readr::read_csv("C:/Data/ipeds/fallenroll_2018.csv")) %>%
-	filter(EFALEVEL == 2) %>%
+	filter(EFALEVEL == 2 | EFALEVEL == 12) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
+	mutate(level = case_when(EFALEVEL == 2 ~ "Undergraduate",
+													 EFALEVEL == 12 ~ "Graduate")) %>%
 	mutate(year = "Fall 2018") %>%
-	select(UNITID, year, total_enr_ug = EFTOTLT)
+	mutate(tot_enr = EFTOTLT) %>%
+	group_by(UNITID) %>%
+	mutate(enrall = sum(tot_enr)) %>%
+	mutate(pct_enr = tot_enr / enrall) %>%
+	ungroup() %>%
+	select(UNITID, year, level, tot_enr, enrall, pct_enr)
 
 glimpse(fallenroll_2018)
 
@@ -48,34 +55,46 @@ fallenroll_2018 %>%
 #fallenroll_2017 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2017.csv")) %>%
 # pc work
 fallenroll_2017 <- as_tibble(readr::read_csv("C:/Data/ipeds/fallenroll_2017.csv")) %>%
-	filter(EFALEVEL == 2) %>%
+	filter(EFALEVEL == 2 | EFALEVEL == 12) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
+	mutate(level = case_when(EFALEVEL == 2 ~ "Undergraduate",
+													 EFALEVEL == 12 ~ "Graduate")) %>%
 	mutate(year = "Fall 2017") %>%
-	select(UNITID, year, total_enr_ug = EFTOTLT)
+	mutate(tot_enr = EFTOTLT) %>%
+	group_by(UNITID) %>%
+	mutate(enrall = sum(tot_enr)) %>%
+	mutate(pct_enr = tot_enr / enrall) %>%
+	ungroup() %>%
+	select(UNITID, year, level, tot_enr, enrall, pct_enr)
 
 glimpse(fallenroll_2017)
 
 #fallenroll_2016 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2016.csv")) %>%
 # pc work
 fallenroll_2016 <- as_tibble(readr::read_csv("C:/Data/ipeds/fallenroll_2016.csv")) %>%
-	filter(EFALEVEL == 2) %>%
+	filter(EFALEVEL == 2 | EFALEVEL == 12) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
+	mutate(level = case_when(EFALEVEL == 2 ~ "Undergraduate",
+													 EFALEVEL == 12 ~ "Graduate")) %>%
 	mutate(year = "Fall 2016") %>%
-	select(UNITID, year, total_enr_ug = EFTOTLT)
+	mutate(tot_enr = EFTOTLT) %>%
+	group_by(UNITID) %>%
+	mutate(enrall = sum(tot_enr)) %>%
+	mutate(pct_enr = tot_enr / enrall) %>%
+	ungroup() %>%
+	select(UNITID, year, level, tot_enr, enrall, pct_enr)
 
 glimpse(fallenroll_2016)
 
 # rbind enrolls, right join on instchar filter, remove records with no enrolls
 fallenroll1618 <- do.call("rbind", list(fallenroll_2018, fallenroll_2017, fallenroll_2016)) %>%
 	right_join(instchar_18) %>%
-	filter(!is.na(total_enr_ug)) %>%
-	select(UNITID, year, total_enr_ug) %>%
+	#filter(!is.na(tot_enr)) %>%
+	select(UNITID, year, level, tot_enr, enrall, pct_enr) %>%
 	arrange(year, UNITID)
 
 glimpse(fallenroll1618)
 
-fallenroll1618 %>%
-	count(SECTOR)
 
 #mac home
 #delta0015all <- (haven::read_sas("~/Data/ipeds/delta_public_release_00_15.sas7bdat", NULL))
@@ -84,19 +103,43 @@ delta0015all <- (haven::read_sas("C:/Data/ipeds/delta_public_release_00_15.sas7b
 glimpse(delta0015all)
 
 delta0015all %>%
-	filter(iclevel %in% c(1, 2)) %>%
-	count(sector_revised)
-	filter(sector_revised == 0) %>%
-	count(unitid)
+	filter(unitid == 122597) %>%
+	select(total_undergraduates, total_postbacc, total_enrollment)
 
 
-delta0015 <- as_tibble(delta0015all) %>%
+delta0015ug <- as_tibble(delta0015all) %>%
 	filter(iclevel %in% c(1, 2)) %>%
 	filter(sector_revised != 0) %>%
 	filter(sector_revised != 6) %>%
 	mutate(UNITID = as.character(unitid)) %>%
 	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
-	select(UNITID, year, total_enr_ug = total_undergraduates)
+	mutate(level = "Undergraduate") %>%
+	mutate(tot_enr = total_undergraduates) %>%
+	select(UNITID, year, level, tot_enr)
+
+glimpse(delta0015ug)
+
+delta0015gr <- as_tibble(delta0015all) %>%
+	filter(iclevel %in% c(1, 2)) %>%
+	filter(sector_revised != 0) %>%
+	filter(sector_revised != 6) %>%
+	mutate(UNITID = as.character(unitid)) %>%
+	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
+	mutate(level = "Graduate") %>%
+	mutate(tot_enr = total_postbacc) %>%
+	select(UNITID, year, level, tot_enr)
+
+glimpse(delta0015gr)
+
+delta0015 <- gdata::interleave(delta0015ug, delta0015gr) %>%
+	mutate(tot_enr = ifelse(is.na(tot_enr), 0, tot_enr)) %>%
+	group_by(UNITID, year) %>%
+	mutate(enrall = sum(tot_enr)) %>%
+	mutate(pct_enr = tot_enr / enrall) %>%
+	ungroup() %>%
+	arrange(UNITID, year) %>%
+	filter(enrall >0) %>%
+	select(UNITID, year, level, tot_enr, enrall, pct_enr)
 
 glimpse(delta0015)
 
@@ -112,19 +155,40 @@ glimpse(delta8799all)
 delta8799all %>%
 	count(carnegie2000)
 
-delta8799 <- as_tibble(delta8799all) %>%
+delta8799ug <- as_tibble(delta8799all) %>%
 	filter(iclevel %in% c(1, 2)) %>%
 	filter(sector_revised != 0) %>%
 	filter(sector_revised != 6) %>%
 	mutate(UNITID = as.character(unitid)) %>%
 	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
-	select(UNITID, year, total_enr_ug = total_undergraduates)
+	mutate(level = "Undergraduate") %>%
+	mutate(tot_enr = total_undergraduates) %>%
+	select(UNITID, year, level, tot_enr)
 
+delta8799gr <- as_tibble(delta8799all) %>%
+	filter(iclevel %in% c(1, 2)) %>%
+	filter(sector_revised != 0) %>%
+	filter(sector_revised != 6) %>%
+	mutate(UNITID = as.character(unitid)) %>%
+	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
+	mutate(level = "Graduate") %>%
+	mutate(tot_enr = total_postbacc) %>%
+	select(UNITID, year, level, tot_enr)
+
+
+delta8799 <- gdata::interleave(delta8799ug, delta8799gr) %>%
+	mutate(tot_enr = ifelse(is.na(tot_enr), 0, tot_enr)) %>%
+	group_by(UNITID, year) %>%
+	mutate(enrall = sum(tot_enr)) %>%
+	mutate(pct_enr = tot_enr / enrall) %>%
+	ungroup() %>%
+	filter(enrall >0) %>%
+	select(UNITID, year, level, tot_enr, enrall, pct_enr)
 glimpse(delta8799)
 
 ## rowbind enr files
 fallenrolla <- do.call("rbind", list(fallenroll1618, delta0015, delta8799)) %>%
-	filter(!is.na(total_enr_ug)) %>%
+#	filter(!is.na(total_enr_ug)) %>%
 	arrange(year, UNITID)
 
 glimpse(fallenrolla)
@@ -175,20 +239,20 @@ instchar %>%
 ## left join enr with instchar
 
 ipeds_fallenroll_8718 <- merge(fallenrolla, instchar) %>%
-	select(UNITID, inst_name, inst_sec, lac, jescoll, year, total_enr_ug) %>%
+	select(UNITID, inst_name, inst_sec, lac, jescoll, year, level, tot_enr, enrall, pct_enr) %>%
 	mutate(inst_sec_desc = case_when(inst_sec == 1 ~ "Public 4-year or above",
 																	 inst_sec == 2 ~ "Private nonprofit 4-year or above",
 																	 inst_sec == 3 ~ "Private for-profit 4-year or above",
 																	 inst_sec == 4 ~ "Public 2-Year",
 																	 inst_sec == 5 ~ "Private nonprofit 2-year",
 																	 inst_sec == 6 ~ "Private for-profit 2-year"))  %>%
-	arrange(UNITID, year) %>%
-	group_by(UNITID) %>%
-	mutate(enr_change = (total_enr_ug - lag(total_enr_ug))) %>%
-	mutate(enr_pct_change = (total_enr_ug/lag(total_enr_ug) - 1) * 100) %>%
+	arrange(UNITID, year, level) %>%
+	group_by(UNITID, level) %>%
+	mutate(enr_change = (tot_enr - lag(tot_enr))) %>%
+	mutate(enr_pct_change = (tot_enr/lag(tot_enr) - 1) * 100) %>%
 	ungroup() %>%
 	select(UNITID, inst_name, inst_sec, inst_sec_desc, lac, jescoll,
-				 year, total_enr_ug, enr_change, enr_pct_change)
+				 year, level, tot_enr, enrall, pct_enr, enr_change, enr_pct_change)
 glimpse(ipeds_fallenroll_8718)
 
 ipeds_fallenroll_8718 %>%
@@ -196,8 +260,9 @@ ipeds_fallenroll_8718 %>%
 
 saveRDS(ipeds_fallenroll_8718, file = "data/ipeds_fallenroll_8718.rds")
 
-fallenroll %>%
-	count(inst_sec)
+ipeds_fallenroll_8718 %>%
+	filter()
+
 
 
 
