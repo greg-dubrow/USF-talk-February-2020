@@ -137,28 +137,46 @@ cahsgrads_1993_2028 <- rbind(cahsgrad93to18_tot, grproj_to2028) %>%
 	select(YEAR, total_grads, uccsu, notuccsu, type, pctucgrads, type, everything())
 
 glimpse(cahsgrads_1993_2028)
+
+cahsgrads_1993_2028 %>%
+	select(total_grads) %>%
+	summary()
+
 saveRDS(cahsgrads_1993_2028, file = "data/cahsgrads_1993_2028.rds")
 
-## charts
+cahsgrads_1993_2028 <- readRDS(file = "data/cahsgrads_1993_2028.rds")
 
+glimpse(cahsgrads_1993_2028)
+
+
+## charts
+plot_cahsgrads_1993_2028 <-
 cahsgrads_1993_2028 %>%
 	select(YEAR, uccsu, notuccsu) %>%
 	pivot_longer(-YEAR, names_to = "ucelig", values_to = "n") %>%
 	ggplot(aes(YEAR, n, fill = rev(ucelig))) +
 	geom_bar(stat = "identity", color = "black") +
+	# xintercept and be named point (1920) or number of tickmarks (27.5)
 	#geom_vline(xintercept = "1920") +
-	geom_vline(xintercept = 27.5) +
-	scale_y_continuous(labels = scales::comma, limits = c(0, 550000)) +
+	#geom_vline(xintercept = 27.5, size = 2) +
+	geom_segment(aes(x = 27.5, y = 0, xend = 27.5, yend = 500000),
+							 size = 2, color = "grey") +
+	scale_y_continuous(labels = scales::comma, limits = c(0, 500000)) +
 	# scale_fill_discrete(labels = c("UC CSU Eligible", "Not UC/CSU Elig"),
-	# 										(values = c("yellow", "lightblue"))) +
-	scale_fill_manual(values = c("yellow", "lightblue"),
+	# 										(values = c("#1295D8", "white"))) +
+	scale_fill_manual(values = c("#1295D8", "white"),
 										labels = c("UC CSU Eligible", "Not UC/CSU Elig")) +
 	labs(x = "Year", y = "Graduates",
 			 fill = "UC/CSU Eligible?") +
-	annotate("text", x = "1920", y = 500000, label = "Projected", hjust = -.25) +
+	annotate("text", x = "1920", y = 500000, label = "Projected",
+					 size = 6, fontface = "italic", hjust = -.25) +
 	theme_minimal() +
-	theme(legend.position = c(.1, .85))
+	theme(panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
+				legend.position = c(.1, .9),
+				legend.title=element_text(size=14), legend.text=element_text(size=12))
 
+ggsave("figs/plot_cahsgrads_1993_2028.png", plot_cahsgrads_1993_2028, device = "png", dpi = 160,
+			 width = 15, height = 7.94, units = "in")
 
 
 
