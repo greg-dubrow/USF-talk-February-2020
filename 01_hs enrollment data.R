@@ -17,11 +17,6 @@ cahsgrad93to16 <- readRDS(file = "Data/cahsgrad93to16.rds") %>%
 
 glimpse(cahsgrad93to16)
 
-cahsgrad93to16  %>%
-	count(YEAR) %>%
-	view()
-
-
 # gradall1617.txt has same structure as gradutes
 # graduates1718.xlsx is different, needs work to get to same structure
 cahsgrad17 <- read_delim("data/gradall_1617.txt",
@@ -33,9 +28,6 @@ cahsgrad17 <- read_delim("data/gradall_1617.txt",
 	arrange(CDS_CODE, YEAR, ETHNIC, GENDER)
 
 glimpse(cahsgrad17)
-
-cahsgrad17 %>%
-	count(YEAR)
 
 cahsgrad93to17 <- rbind(cahsgrad93to16, cahsgrad17) %>%
 	arrange(CDS_CODE, YEAR, ETHNIC, GENDER)
@@ -118,7 +110,8 @@ grproj_to2028 <- readxl::read_excel("data/capublic_k12_enrollproj_to2028.xlsx",
 
 glimpse(grproj_to2028)
 
-hsgrads_1993_2028 <- rbind(cahsgrad93to18_tot, grproj_to2028) %>%
+# merge actual and projected, impute vals for projected
+cahsgrads_1993_2028 <- rbind(cahsgrad93to18_tot, grproj_to2028) %>%
 	mutate(pctucgrads = uccsu / total_grads) %>%
 	arrange(YEAR) %>%
 	# add projected uccsu grads based on constant 2017-18 to 2018-19 increase 0.0061437
@@ -143,9 +136,40 @@ hsgrads_1993_2028 <- rbind(cahsgrad93to18_tot, grproj_to2028) %>%
 	mutate(gr_notuc_pct_change = (notuccsu/lag(notuccsu) - 1)) %>%
 	select(YEAR, total_grads, uccsu, notuccsu, type, pctucgrads, type, everything())
 
-glimpse(hsgrads_1993_2028)
+glimpse(cahsgrads_1993_2028)
+saveRDS(cahsgrads_1993_2028, file = "data/cahsgrads_1993_2028.rds")
 
 ## charts
+
+cahsgrads_1993_2028 %>%
+	select(YEAR, uccsu, notuccsu) %>%
+	pivot_longer(-YEAR, names_to = "ucelig", values_to = "n") %>%
+	ggplot(aes(YEAR, n, fill = ucelig)) +
+	geom_bar(stat = "identity", color = "black") +
+	scale_y_continuous(labels = scales::comma) +
+	scale_fill_discrete(labels = c("A", "B", "C"))
+	labs(x = "Year", y = "Graduates",
+			 fill = "UC/CSU Eligible?") +
+	scale_y_continuous(labels = scales::comma)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # total by uc/csu elig & not
 cahsgrad93to17 %>%
 	group_by(YEAR) %>%
@@ -163,5 +187,3 @@ cahsgrad93to17 %>%
 	scale_y_continuous(labels = scales::comma) +
 	scale_fill_manual(values = c("yellow", "lightblue")) +
 	theme_minimal()
-
-ucgrads <- get_school_grad_data('2016-17', 'UCGradEth')
