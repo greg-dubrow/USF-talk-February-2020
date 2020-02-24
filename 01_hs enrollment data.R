@@ -144,18 +144,20 @@ saveRDS(cahsgrads_1993_2028, file = "data/cahsgrads_1993_2028.rds")
 cahsgrads_1993_2028 %>%
 	select(YEAR, uccsu, notuccsu) %>%
 	pivot_longer(-YEAR, names_to = "ucelig", values_to = "n") %>%
-	ggplot(aes(YEAR, n, fill = ucelig)) +
+	ggplot(aes(YEAR, n, fill = rev(ucelig))) +
 	geom_bar(stat = "identity", color = "black") +
-	scale_y_continuous(labels = scales::comma) +
-	scale_fill_discrete(labels = c("A", "B", "C"))
+	#geom_vline(xintercept = "1920") +
+	geom_vline(xintercept = 27.5) +
+	scale_y_continuous(labels = scales::comma, limits = c(0, 550000)) +
+	# scale_fill_discrete(labels = c("UC CSU Eligible", "Not UC/CSU Elig"),
+	# 										(values = c("yellow", "lightblue"))) +
+	scale_fill_manual(values = c("yellow", "lightblue"),
+										labels = c("UC CSU Eligible", "Not UC/CSU Elig")) +
 	labs(x = "Year", y = "Graduates",
 			 fill = "UC/CSU Eligible?") +
-	scale_y_continuous(labels = scales::comma)
-
-
-
-
-
+	annotate("text", x = "1920", y = 500000, label = "Projected", hjust = -.25) +
+	theme_minimal() +
+	theme(legend.position = c(.1, .85))
 
 
 
