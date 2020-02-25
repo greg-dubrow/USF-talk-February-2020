@@ -365,8 +365,8 @@ ipeds_fallenroll_8718 %>%
 	select(UNITID, inst_name, year, tot_enr, enr_change, enr_pct_change, enr_pct_change2, index_enr_inst)
 
 enrollindex_jes %>%
-	filter(year == "Fall 1997") %>%
-	slice(which.min(index_enr_inst))
+	filter(year == "Fall 2005") %>%
+	slice(which.max(index_enr_inst))
 enrollindex_jes %>%
 	slice(which.min(index_enr_inst))
 
