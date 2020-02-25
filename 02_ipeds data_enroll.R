@@ -2,8 +2,8 @@
 
 library(tidyverse)
 library(tidylog)
-library(ipeds)
-library(educationdata)
+#library(ipeds)
+#library(educationdata)
 library(janitor)
 library(readr)
 library(patchwork)
@@ -261,7 +261,7 @@ ipeds_fallenroll_8718 %>%
 	count(year)
 
 saveRDS(ipeds_fallenroll_8718, file = "data/ipeds_fallenroll_8718.rds")
-
+ipeds_fallenroll_8718 <- readRDS(file = "data/ipeds_fallenroll_8718.rds")
 
 ## charts
 # USF UG & grad enroll over time
@@ -372,7 +372,7 @@ enrollindex_jes %>%
 
 
 ggplot(enrollindex_jes, aes(year, index_enr_inst, group = UNITID)) +
-	geom_line(data = subset(enrollindex_jes, UNITID != "122612"), color = alpha("grey", 0.7)) +
+	geom_line(data = subset(enrollindex_jes, UNITID != "122612"), color = "grey") +
 	geom_line(data = subset(enrollindex_jes, UNITID == "122612"), color = "#00543C", size = 1) +
 	scale_y_continuous(limits = c(-.5, 2),
 	 									 breaks = c(-.5, 0, .5, 1, 1.5, 2)) +
@@ -381,6 +381,7 @@ ggplot(enrollindex_jes, aes(year, index_enr_inst, group = UNITID)) +
 	theme(text = element_text(family = "Calibri"),
 				panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
 				axis.text.y = element_text(size = 14))
+
 ggsave("figs/plot_jescollugenrindex.png", device = "png", dpi = 160,
 			 width = 18.89, height = 10, units = "in")
 
