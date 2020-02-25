@@ -6,10 +6,12 @@ library(ipeds)
 library(educationdata)
 library(janitor)
 library(readr)
+library(patchwork)
+library(scales)
 
 # unitid for jesuit schools
 jesids <- c("164924", "181002", "186432", "122931", "169716", "159656", "127918", "192323", "163046",
-	"236595", "239105", "203368", "179159", "215770", "215929", "131496", "166124", "102234",
+	"122612", "236595", "239105", "203368", "179159", "215770", "215929", "131496", "166124", "102234",
 	"117946", "206622", "102234", "166124", "117946", "206622", "235316", "129242")
 
 # use 2018 instchar to filter out enr 1618 by level and sector
@@ -260,11 +262,144 @@ ipeds_fallenroll_8718 %>%
 
 saveRDS(ipeds_fallenroll_8718, file = "data/ipeds_fallenroll_8718.rds")
 
+
+## charts
+# USF UG & grad enroll over time
+
 ipeds_fallenroll_8718 %>%
-	filter()
+	filter(UNITID == "122612", level == "Graduate") %>%
+	summary(tot_enr)
+
+plot_usfenr_ug <-
+	ipeds_fallenroll_8718 %>%
+	filter(UNITID == "122612", level == "Undergraduate") %>%
+	select(year, level, tot_enr) %>%
+	ggplot(aes(year, tot_enr)) +
+	geom_bar(stat = "identity", fill = "#00543C") +
+	geom_text(aes(label = scales::comma(tot_enr)), color = "#919194", vjust = -.75, size = 5) +
+	labs(x = "", y = "") +
+	scale_y_continuous(label = scales::comma, limits = c(0, 7000),
+										 breaks = c(0, 1750, 3500, 5250, 7000)) +
+	theme_minimal() +
+	theme(text = element_text(family = "Calibri"),
+				panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
+				axis.text.y = element_text(size = 10))
+
+plot_usfenr_gr <-
+	ipeds_fallenroll_8718 %>%
+	filter(UNITID == "122612", level == "Graduate") %>%
+	select(year, level, tot_enr) %>%
+	ggplot(aes(year, tot_enr)) +
+	geom_bar(stat = "identity", fill = "#FDBB30") +
+	geom_text(aes(label = scales::comma(tot_enr, accuracy = 1)),
+						color = "#919194", vjust = -1.15, size = 5) +
+	labs(x = "", y = "") +
+	scale_y_continuous(label = scales::comma, limits = c(0, 4500),
+										 breaks = c(0, 1500, 3000, 4500)) +
+	theme_minimal() +
+	theme(text = element_text(family = "Calibri"),
+		panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
+				axis.text.y = element_text(size = 10))
+
+plot_usfenr_all <- plot_usfenr_ug + plot_usfenr_gr +
+	plot_layout(ncol = 1)
+
+ggsave("figs/plot_usf_enr87to18.png", plot_usfenr_all, device = "png", dpi = 160,
+				 width = 18.89, height = 10, units = "in")
+
+ipeds_fallenroll_8718 %>%
+	filter(UNITID == "122612", level == "Undergraduate") %>%
+	select(pct_enr) %>%
+	summary()
+
+ipeds_fallenroll_8718 %>%
+	filter(UNITID == "122612", level == "Undergraduate") %>%
+	select(year, pct_enr) %>%
+	ggplot(aes(year, pct_enr, group = 1)) +
+	geom_line(color = "#00543C", size = 1.5) +
+	# geom_text(aes(label = scales::comma(tot_enr, accuracy = 1)),
+	# 					color = "#919194", vjust = -1.15, size = 5) +
+	labs(x = "", y = "") +
+	annotate("text", x = 10, y = .9, label = "Ratio of undergrad:grad students fairly steady",
+					 size = 5, fontface = "italic", color = "#919194") +
+	annotate("text", x = 6.4, y = .8, label = "ranged from 56% to 64%",
+					 size = 5, fontface = "italic", color = "#919194") +
+	scale_y_continuous(label = scales::percent, limits = c(0, 1),
+										 breaks = c(0, .2, .4, .6, .8, 1)) +
+	theme_minimal() +
+	theme(text = element_text(family = "Calibri"),
+				panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
+				axis.text.y = element_text(size = 10))
+
+ggsave("figs/plot_usf_pctug87to18.png", device = "png", dpi = 160,
+			 width = 18.89, height = 10, units = "in")
+
+#adjusted enrollment trends for jesuit colleges
+enrollindex_jes <-
+ipeds_fallenroll_8718 %>%
+	filter(jescoll == 1, level == "Undergraduate") %>%
+  mutate(enr_pct_change2 = enr_pct_change / 100) %>%
+	mutate(enr_pct_change2 = ifelse(year == "Fall 1987", 1, enr_pct_change2)) %>%
+	arrange(UNITID, year) %>%
+	group_by(UNITID) %>%
+	mutate(index_enr_inst = 1) %>%
+	mutate(index_enr_inst = ifelse(year >= "Fall 1988", cumsum(enr_pct_change2),
+																 index_enr_inst)) %>%
+	# mutate(index_enr_inst = ifelse(year >= "Fall 1989", lag(index_enr_inst) + enr_pct_change2,
+	# 															 index_enr_inst)) %>%
+	ungroup() %>%
+	## fix loyoal NO b/c of enroll drop after katrina
+	mutate(enr_pct_change2 = ifelse((UNITID == "159656" & year == "Fall 2007"), 0.804576441089588, enr_pct_change2)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2007"), 0.798144205, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2008"), 0.682463831, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2009"), 0.687378765, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2010"), 0.727258373, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2011"), 0.784421904, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2012"), 0.867584122, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2013"), 0.878642574, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2014"), 0.799267574, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2015"), 0.748351077, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2016"), 0.636047787, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2017"), 0.684395893, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2018"), 0.8304374, index_enr_inst)) %>%
+	select(UNITID, inst_name, year, tot_enr, enr_change, enr_pct_change, enr_pct_change2, index_enr_inst)
+
+enrollindex_jes %>%
+	filter(year == "Fall 1997") %>%
+	slice(which.min(index_enr_inst))
+enrollindex_jes %>%
+	slice(which.min(index_enr_inst))
 
 
+ggplot(enrollindex_jes, aes(year, index_enr_inst, group = UNITID)) +
+	geom_line(data = subset(enrollindex_jes, UNITID != "122612"), color = alpha("grey", 0.7)) +
+	geom_line(data = subset(enrollindex_jes, UNITID == "122612"), color = "#00543C", size = 1) +
+	scale_y_continuous(limits = c(-.5, 2),
+	 									 breaks = c(-.5, 0, .5, 1, 1.5, 2)) +
+	labs(x = "", y = "") +
+	theme_minimal() +
+	theme(text = element_text(family = "Calibri"),
+				panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
+				axis.text.y = element_text(size = 14))
+ggsave("figs/plot_jescollugenrindex.png", device = "png", dpi = 160,
+			 width = 18.89, height = 10, units = "in")
 
+
+# enrollindex_lac <-
+# 	ipeds_fallenroll_8718 %>%
+# 	mutate(lac = ifelse(UNITID == "122612", 1, lac)) %>%
+# 	filter(lac == 1, level == "Undergraduate") %>%
+# 	mutate(enr_pct_change2 = enr_pct_change / 100) %>%
+# 	mutate(enr_pct_change2 = ifelse(year == "Fall 1987", 1, enr_pct_change2)) %>%
+# 	arrange(UNITID, year) %>%
+# 	group_by(UNITID) %>%
+# 	mutate(index_enr_inst = 1) %>%
+# 	mutate(index_enr_inst = ifelse(year >= "Fall 1988", cumsum(enr_pct_change2),
+# 																 index_enr_inst)) %>%
+# 	# mutate(index_enr_inst = ifelse(year >= "Fall 1989", lag(index_enr_inst) + enr_pct_change2,
+# 	# 															 index_enr_inst)) %>%
+# 	ungroup() %>%
+# 	select(UNITID, inst_name, year, tot_enr, enr_change, enr_pct_change, enr_pct_change2, index_enr_inst)
 
 
 ## jesuit schools
