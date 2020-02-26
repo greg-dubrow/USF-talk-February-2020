@@ -39,9 +39,9 @@ tuit_18 <- as_tibble(readr::read_csv("~/Data/ipeds/tuition_2018.csv")) %>%
 	mutate(tuition_fee_ug = as.double(tuition_fee_ug))
 glimpse(tuit_18)
 
-tuit_17 <- as_tibble(readr::read_csv("~/Data/ipeds/tuition_2018.csv")) %>%
+tuit_17 <- as_tibble(readr::read_csv("~/Data/ipeds/tuition_2017.csv")) %>%
 	# work desktop
-	# tuit_18 <- as_tibble(readr::read_csv("C:/Data/ipeds/tuition_2018.csv")) %>%
+	# tuit_18 <- as_tibble(readr::read_csv("C:/Data/ipeds/tuition_2017.csv")) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
 	mutate(year = "Fall 2017") %>%
 	select(UNITID, year, tuition_fee_ug = CHG2AY2) %>%
@@ -49,22 +49,32 @@ tuit_17 <- as_tibble(readr::read_csv("~/Data/ipeds/tuition_2018.csv")) %>%
 
 glimpse(tuit_17)
 
-tuit_16 <- as_tibble(readr::read_csv("~/Data/ipeds/tuition_2018.csv")) %>%
+tuit_16 <- as_tibble(readr::read_csv("~/Data/ipeds/tuition_2016.csv")) %>%
 	# work desktop
-	# tuit_18 <- as_tibble(readr::read_csv("C:/Data/ipeds/tuition_2018.csv")) %>%
+	# tuit_18 <- as_tibble(readr::read_csv("C:/Data/ipeds/tuition_2016.csv")) %>%
 	mutate(UNITID = as.character(UNITID)) %>%
 	mutate(year = "Fall 2016") %>%
 	select(UNITID, year, tuition_fee_ug = CHG2AY1) %>%
 	mutate(tuition_fee_ug = as.double(tuition_fee_ug))
 glimpse(tuit_16)
 
-tuit1618 <- fallenroll1618 <- do.call("rbind", list(tuit_18, tuit_17, tuit_16)) %>%
+tuit_15 <- as_tibble(readr::read_csv("~/Data/ipeds/tuition_2015.csv")) %>%
+	# work desktop
+	# tuit_18 <- as_tibble(readr::read_csv("C:/Data/ipeds/tuition_2015.csv")) %>%
+	mutate(UNITID = as.character(UNITID)) %>%
+	mutate(year = "Fall 2015") %>%
+	select(UNITID, year, tuition_fee_ug = CHG2AY1) %>%
+	mutate(tuition_fee_ug = as.double(tuition_fee_ug))
+glimpse(tuit_16)
+
+
+tuit1518 <- fallenroll1518 <- do.call("rbind", list(tuit_18, tuit_17, tuit_16, tuit_15)) %>%
 	right_join(instchar_18) %>%
 	#filter(!is.na(tot_enr)) %>%
 	select(UNITID, year, tuition_fee_ug) %>%
 	arrange(year, UNITID)
 
-glimpse(tuit1618)
+glimpse(tuit1518)
 
 # tuition data from delta
 #mac home
@@ -78,7 +88,8 @@ delta0015_tuitaid <- delta0015all %>%
 	filter(sector_revised != 0) %>%
 	filter(sector_revised != 6) %>%
 	mutate(UNITID = as.character(unitid)) %>%
-	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
+	mutate(year_n = as.double(academicyear) - 1) %>%
+	mutate(year = paste("Fall", year_n, sep = " ")) %>%
 	select(UNITID, year, tuition_fee_ug = tuitionfee02_tf)
 
 glimpse(delta0015_tuitaid)
@@ -97,7 +108,8 @@ delta8799_tuitaid <- as_tibble(delta8799all) %>%
 	filter(sector_revised != 0) %>%
 	filter(sector_revised != 6) %>%
 	mutate(UNITID = as.character(unitid)) %>%
-	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
+	mutate(year_n = as.double(academicyear) - 1) %>%
+	mutate(year = paste("Fall", year_n, sep = " ")) %>%
 	select(UNITID, year, tuition_fee_ug = tuitionfee02_tf)
 glimpse(delta8799_tuitaid)
 

@@ -88,16 +88,37 @@ fallenroll_2016 <- as_tibble(readr::read_csv("C:/Data/ipeds/fallenroll_2016.csv"
 
 glimpse(fallenroll_2016)
 
+#fallenroll_2015 <- as_tibble(readr::read_csv("~/Data/ipeds/fallenroll_2015.csv")) %>%
+# pc work
+fallenroll_2015 <- as_tibble(readr::read_csv("C:/Data/ipeds/fallenroll_2015.csv")) %>%
+	filter(EFALEVEL == 2 | EFALEVEL == 12) %>%
+	mutate(UNITID = as.character(UNITID)) %>%
+	mutate(level = case_when(EFALEVEL == 2 ~ "Undergraduate",
+													 EFALEVEL == 12 ~ "Graduate")) %>%
+	mutate(year = "Fall 2015") %>%
+	mutate(tot_enr = EFTOTLT) %>%
+	group_by(UNITID) %>%
+	mutate(enrall = sum(tot_enr)) %>%
+	mutate(pct_enr = tot_enr / enrall) %>%
+	ungroup() %>%
+	select(UNITID, year, level, tot_enr, enrall, pct_enr)
+
+glimpse(fallenroll_2015)
+
+
 # rbind enrolls, right join on instchar filter, remove records with no enrolls
-fallenroll1618 <- do.call("rbind", list(fallenroll_2018, fallenroll_2017, fallenroll_2016)) %>%
+fallenroll1518 <- do.call("rbind", list(fallenroll_2018, fallenroll_2017,
+																				fallenroll_2016, fallenroll_2015)) %>%
 	right_join(instchar_18) %>%
 	#filter(!is.na(tot_enr)) %>%
 	select(UNITID, year, level, tot_enr, enrall, pct_enr) %>%
 	arrange(year, UNITID)
 
-glimpse(fallenroll1618)
+glimpse(fallenroll1518)
 
 
+## note - academic year in delt files is named to trailing year, so 2014-15 = academic year 2015
+# fall enroll data adjusted to trailing year, so data from Fall 1999 to fall 2014
 #mac home
 #delta0015all <- (haven::read_sas("~/Data/ipeds/delta_public_release_00_15.sas7bdat", NULL))
 # pc work
@@ -114,19 +135,24 @@ delta0015ug <- as_tibble(delta0015all) %>%
 	filter(sector_revised != 0) %>%
 	filter(sector_revised != 6) %>%
 	mutate(UNITID = as.character(unitid)) %>%
-	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
+	mutate(year_n = as.double(academicyear) - 1) %>%
+	mutate(year = paste("Fall", year_n, sep = " ")) %>%
 	mutate(level = "Undergraduate") %>%
 	mutate(tot_enr = total_undergraduates) %>%
 	select(UNITID, year, level, tot_enr)
 
 glimpse(delta0015ug)
 
+delta0015ug %>%
+	count(year)
+
 delta0015gr <- as_tibble(delta0015all) %>%
 	filter(iclevel %in% c(1, 2)) %>%
 	filter(sector_revised != 0) %>%
 	filter(sector_revised != 6) %>%
 	mutate(UNITID = as.character(unitid)) %>%
-	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
+	mutate(year_n = as.double(academicyear) - 1) %>%
+	mutate(year = paste("Fall", year_n, sep = " ")) %>%
 	mutate(level = "Graduate") %>%
 	mutate(tot_enr = total_postbacc) %>%
 	select(UNITID, year, level, tot_enr)
@@ -148,6 +174,8 @@ glimpse(delta0015)
 delta0015 %>%
 	count(year)
 
+## note - academic year in delt files is named to trailing year, so 1998-99 = academic year 1999
+# fall enroll data adjusted to trailing year, so data from Fall 1986 to fall 1998
 #mac home
 #delta8799all <- (haven::read_sas("~/Data/ipeds/delta_public_release_87_99.sas7bdat", NULL))
 # pc work
@@ -162,17 +190,21 @@ delta8799ug <- as_tibble(delta8799all) %>%
 	filter(sector_revised != 0) %>%
 	filter(sector_revised != 6) %>%
 	mutate(UNITID = as.character(unitid)) %>%
-	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
+	mutate(year_n = as.double(academicyear) - 1) %>%
+	mutate(year = paste("Fall", year_n, sep = " ")) %>%
 	mutate(level = "Undergraduate") %>%
 	mutate(tot_enr = total_undergraduates) %>%
 	select(UNITID, year, level, tot_enr)
+
+glimpse(delta8799ug)
 
 delta8799gr <- as_tibble(delta8799all) %>%
 	filter(iclevel %in% c(1, 2)) %>%
 	filter(sector_revised != 0) %>%
 	filter(sector_revised != 6) %>%
 	mutate(UNITID = as.character(unitid)) %>%
-	mutate(year = paste("Fall", academicyear, sep = " ")) %>%
+	mutate(year_n = as.double(academicyear) - 1) %>%
+	mutate(year = paste("Fall", year_n, sep = " ")) %>%
 	mutate(level = "Graduate") %>%
 	mutate(tot_enr = total_postbacc) %>%
 	select(UNITID, year, level, tot_enr)
@@ -189,8 +221,9 @@ delta8799 <- gdata::interleave(delta8799ug, delta8799gr) %>%
 glimpse(delta8799)
 
 ## rowbind enr files
-fallenrolla <- do.call("rbind", list(fallenroll1618, delta0015, delta8799)) %>%
+fallenrolla <- do.call("rbind", list(fallenroll1518, delta0015, delta8799)) %>%
 #	filter(!is.na(total_enr_ug)) %>%
+	filter(year != "Fall 1986") %>%
 	arrange(year, UNITID)
 
 glimpse(fallenrolla)
@@ -258,7 +291,8 @@ ipeds_fallenroll_8718 <- merge(fallenrolla, instchar) %>%
 glimpse(ipeds_fallenroll_8718)
 
 ipeds_fallenroll_8718 %>%
-	count(year)
+	count(year) %>%
+	view()
 
 saveRDS(ipeds_fallenroll_8718, file = "data/ipeds_fallenroll_8718.rds")
 ipeds_fallenroll_8718 <- readRDS(file = "data/ipeds_fallenroll_8718.rds")
@@ -349,26 +383,49 @@ ipeds_fallenroll_8718 %>%
 	# 															 index_enr_inst)) %>%
 	ungroup() %>%
 	## fix loyoal NO b/c of enroll drop after katrina
-	mutate(enr_pct_change2 = ifelse((UNITID == "159656" & year == "Fall 2007"), 0.804576441089588, enr_pct_change2)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2007"), 0.798144205, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2008"), 0.682463831, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2009"), 0.687378765, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2010"), 0.727258373, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2011"), 0.784421904, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2012"), 0.867584122, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2013"), 0.878642574, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2014"), 0.799267574, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2015"), 0.748351077, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2016"), 0.636047787, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2017"), 0.684395893, index_enr_inst)) %>%
-	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2018"), 0.8304374, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2006"), 0.833399497, index_enr_inst)) %>%
+	# mutate(index_enr_inst = ifelse((UNITID == "159656" & is.infinite(index_enr_inst)),
+	# 															 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2007"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2008"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2009"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2010"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2011"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2012"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2013"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2014"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2015"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2016"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2017"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
+	mutate(index_enr_inst = ifelse((UNITID == "159656" & year >= "Fall 2018"),
+																 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
 	select(UNITID, inst_name, year, tot_enr, enr_change, enr_pct_change, enr_pct_change2, index_enr_inst)
 
 enrollindex_jes %>%
-	filter(year == "Fall 2005") %>%
+	filter(year == "Fall 2014") %>%
 	slice(which.max(index_enr_inst))
 enrollindex_jes %>%
+	filter(year == "Fall 2014") %>%
+	filter(index_enr_inst > 1.5)
+
+enrollindex_jes %>%
+	filter(year == "Fall 2016") %>%
 	slice(which.min(index_enr_inst))
+
+enrollindex_jes %>%
+	filter(UNITID == "159656" & year == "Fall 2011") %>%
+	count(index_enr_inst)
 
 
 ggplot(enrollindex_jes, aes(year, index_enr_inst, group = UNITID)) +
