@@ -315,8 +315,7 @@ plot_usfenr_ug <-
 	scale_y_continuous(label = scales::comma, limits = c(0, 7000),
 										 breaks = c(0, 1750, 3500, 5250, 7000)) +
 	theme_minimal() +
-	theme(text = element_text(family = "Calibri"),
-				panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
+	theme(panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
 				axis.text.y = element_text(size = 10))
 
 plot_usfenr_gr <-
@@ -361,7 +360,7 @@ ipeds_fallenroll_8718 %>%
 	scale_y_continuous(label = scales::percent, limits = c(0, 1),
 										 breaks = c(0, .2, .4, .6, .8, 1)) +
 	theme_minimal() +
-	theme(text = element_text(family = "Calibri"),
+	theme(#text = element_text(family = "Calibri"),
 				panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
 				axis.text.y = element_text(size = 10))
 
@@ -382,7 +381,7 @@ ipeds_fallenroll_8718 %>%
 	# mutate(index_enr_inst = ifelse(year >= "Fall 1989", lag(index_enr_inst) + enr_pct_change2,
 	# 															 index_enr_inst)) %>%
 	ungroup() %>%
-	## fix loyoal NO b/c of enroll drop after katrina
+	## fix loyola NO b/c of enroll drop after katrina
 	mutate(index_enr_inst = ifelse((UNITID == "159656" & year == "Fall 2006"), 0.833399497, index_enr_inst)) %>%
 	# mutate(index_enr_inst = ifelse((UNITID == "159656" & is.infinite(index_enr_inst)),
 	# 															 lag(index_enr_inst) + enr_pct_change2, index_enr_inst)) %>%
@@ -413,6 +412,10 @@ ipeds_fallenroll_8718 %>%
 	select(UNITID, inst_name, year, tot_enr, enr_change, enr_pct_change, enr_pct_change2, index_enr_inst)
 
 enrollindex_jes %>%
+	count(inst_name) %>%
+	view()
+
+enrollindex_jes %>%
 	filter(year == "Fall 2014") %>%
 	slice(which.max(index_enr_inst))
 enrollindex_jes %>%
@@ -435,7 +438,7 @@ ggplot(enrollindex_jes, aes(year, index_enr_inst, group = UNITID)) +
 	 									 breaks = c(-.5, 0, .5, 1, 1.5, 2)) +
 	labs(x = "", y = "") +
 	theme_minimal() +
-	theme(text = element_text(family = "Calibri"),
+	theme(#text = element_text(family = "Calibri"),
 				panel.grid.major = element_blank(),	panel.grid.minor = element_blank(),
 				axis.text.y = element_text(size = 14))
 
